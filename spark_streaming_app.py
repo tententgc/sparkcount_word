@@ -1,52 +1,69 @@
-import logging
-import time
-import json
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import explode, split, window, current_timestamp
+from pyspark.sql.functions import explode, from_json, col, window, avg, min, max, count, sum
+from pyspark.sql.types import StructType, StringType, FloatType, LongType, ArrayType
 
-# ปิด log info
-logger = logging.getLogger("py4j")
-logger.setLevel(logging.ERROR)
-
+# สร้าง Spark Session
 spark = SparkSession.builder \
-    .appName("JSONReportKafkaStreaming") \
+    .appName("StockPriceStreamingAggregator") \
+    .master("local[*]") \
     .getOrCreate()
 
-spark.sparkContext.setLogLevel("ERROR")
+spark.sparkContext.setLogLevel("WARN")
 
-df = spark.readStream \
+# Define schema for a single stock entry
+stock_schema = StructType() \
+    .add("symbol", StringType()) \
+    .add("price", FloatType()) \
+    .add("high", FloatType()) \
+    .add("low", FloatType()) \
+    .add("timestamp", LongType())
+
+# Kafka message = list of stock records → use ArrayType
+message_schema = ArrayType(stock_schema)
+
+# Read from Kafka
+df_raw = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "localhost:9092") \
-    .option("subscribe", "finnhub") \
+    .option("subscribe", "stock_prices") \
     .option("startingOffsets", "latest") \
-    .load() \
-    .selectExpr("CAST(value AS STRING) as message")
+    .load()
 
-df_with_timestamp = df.withColumn("timestamp", current_timestamp())
-    
-words = df_with_timestamp.select(
-    explode(split(df_with_timestamp.message, " ")).alias("word"),
-    df_with_timestamp.timestamp
+# Decode and parse JSON
+df_parsed = df_raw.selectExpr("CAST(value AS STRING)") \
+    .select(from_json(col("value"), message_schema).alias("stocks"))
+
+# Flatten the array of stocks (explode)
+df_flat = df_parsed.select(explode("stocks").alias("stock")) \
+    .select(
+        col("stock.symbol"),
+        col("stock.price"),
+        col("stock.high"),
+        col("stock.low"),
+        col("stock.timestamp").cast("timestamp").alias("event_time")
+    )
+
+# Aggregation: count, sum, mean, min, max by symbol per 1-minute window
+agg_df = df_flat.groupBy(
+    window(col("event_time"), "5 minutes", "1 minute"),  # <--- sliding window
+    col("symbol")
+).agg(
+    count("price").alias("count"),
+    sum("price").alias("sum"),
+    avg("price").alias("mean"),
+    min("price").alias("min"),
+    max("price").alias("max")
+).select(
+    col("window.start").alias("start"),
+    col("window.end").alias("end"),
+    "symbol", "count", "sum", "mean", "min", "max"
 )
-word_counts = words.groupBy(
-    window("timestamp", "60 seconds", "10 seconds"),
-    "word"
-).count()
 
-
-query = word_counts.writeStream \
-    .outputMode("complete") \
+# Output to console
+query = agg_df.writeStream \
+    .outputMode("update") \
     .format("console") \
     .option("truncate", False) \
     .start()
-    
-# while query.isActive:
-#     time.sleep(10)
-#     progress = query.lastProgress
-#     if progress:
-#         print(json.dumps(progress, indent=2))
-#     with open("report.json", "w") as f:
-#         json.dump(progress, f, indent=2)
-        
-        
+
 query.awaitTermination()
