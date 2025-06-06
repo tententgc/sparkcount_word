@@ -1,0 +1,47 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+env/
+venv/
+.spark-venv/
+
+# Environment variable files
+.env
+
+# Logs
+*.log
+
+# MacOS metadata
+.DS_Store
+
+# Spark checkpoints and temp files
+checkpoint/
+output/
+*.crc
+*.tmp
+*.delta
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Kafka log dirs
+/kafka-logs/
+/zookeeper-logs/
+
+# Temporary spark files
+/tmp/
+*.jar
+
+# IDEs
+.vscode/
+.idea/
+
+# Pip package distribution
+*.egg-info/
+dist/
+build/
+LI-Small_Trans.csv

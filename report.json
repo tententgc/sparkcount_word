@@ -1,0 +1,71 @@
+{
+  "id": "3f68896a-6144-43b9-bce6-667e308df8cc",
+  "runId": "d26b2c2e-2956-4969-b398-65655b9f12ab",
+  "name": null,
+  "timestamp": "2025-06-06T10:05:59.363Z",
+  "batchId": 6,
+  "numInputRows": 5,
+  "inputRowsPerSecond": 357.1428571428571,
+  "processedRowsPerSecond": 2.450980392156863,
+  "durationMs": {
+    "addBatch": 1940,
+    "commitOffsets": 31,
+    "getBatch": 0,
+    "latestOffset": 2,
+    "queryPlanning": 9,
+    "triggerExecution": 2040,
+    "walCommit": 55
+  },
+  "stateOperators": [
+    {
+      "operatorName": "stateStoreSave",
+      "numRowsTotal": 630,
+      "numRowsUpdated": 378,
+      "allUpdatesTimeMs": 2259,
+      "numRowsRemoved": 0,
+      "allRemovalsTimeMs": 0,
+      "commitTimeMs": 9327,
+      "memoryUsedBytes": 278736,
+      "numRowsDroppedByWatermark": 0,
+      "numShufflePartitions": 200,
+      "numStateStoreInstances": 200,
+      "customMetrics": {
+        "loadedMapCacheHitCount": 2400,
+        "loadedMapCacheMissCount": 0,
+        "stateOnCurrentVersionSizeBytes": 165328
+      }
+    }
+  ],
+  "sources": [
+    {
+      "description": "KafkaV2[Subscribe[finnhub]]",
+      "startOffset": {
+        "finnhub": {
+          "0": 885
+        }
+      },
+      "endOffset": {
+        "finnhub": {
+          "0": 890
+        }
+      },
+      "latestOffset": {
+        "finnhub": {
+          "0": 890
+        }
+      },
+      "numInputRows": 5,
+      "inputRowsPerSecond": 357.1428571428571,
+      "processedRowsPerSecond": 2.450980392156863,
+      "metrics": {
+        "avgOffsetsBehindLatest": "0.0",
+        "maxOffsetsBehindLatest": "0",
+        "minOffsetsBehindLatest": "0"
+      }
+    }
+  ],
+  "sink": {
+    "description": "org.apache.spark.sql.execution.streaming.ConsoleTable$@b7733b9",
+    "numOutputRows": 630
+  }
+}
