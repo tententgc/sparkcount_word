@@ -110,7 +110,6 @@ sp500_symbols = [
 ]
 
 frequency = 'quarterly'  # หรือ 'annual' สำหรับรายงานประจำปี
-
 while True:
     try:
         for symbol in sp500_symbols:
@@ -123,22 +122,69 @@ while True:
                 
                 if reports_2025:
                     for report in reports_2025[:1]:  # ส่งรายงานล่าสุดปี 2025 1 ฉบับต่อบริษัท
-                        # ดึงข้อมูลสำคัญจาก report
-                        key_financial_data = extract_key_financial_data(report)
+                        # สร้าง array ของข้อมูล financial statements
+                        financial_statements = []
+                        
+                        # ข้อมูลพื้นฐานของบริษัท
+                        company_info = {
+                            'symbol': report.get('symbol'),
+                            'year': report.get('year'),
+                            'quarter': report.get('quarter'),
+                            'form': report.get('form'),
+                            'filed_date': report.get('filedDate'),
+                            'statement_type': 'company_info'
+                        }
+                        financial_statements.append(company_info)
+                        
+                        # ดึงข้อมูลจาก Income Statement (ic)
+                        if 'report' in report and 'ic' in report['report']:
+                            for item in report['report']['ic']:
+                                ic_statement = {
+                                    'symbol': report.get('symbol'),
+                                    'year': report.get('year'),
+                                    'quarter': report.get('quarter'),
+                                    'statement_type': 'income_statement',
+                                    'concept': item.get('concept'),
+                                    'label': item.get('label'),
+                                    'value': item.get('value'),
+                                    'unit': item.get('unit')
+                                }
+                                financial_statements.append(ic_statement)
+                        
+                        # ดึงข้อมูลจาก Balance Sheet (bs)
+                        if 'report' in report and 'bs' in report['report']:
+                            for item in report['report']['bs']:
+                                bs_statement = {
+                                    'symbol': report.get('symbol'),
+                                    'year': report.get('year'),
+                                    'quarter': report.get('quarter'),
+                                    'statement_type': 'balance_sheet',
+                                    'concept': item.get('concept'),
+                                    'label': item.get('label'),
+                                    'value': item.get('value'),
+                                    'unit': item.get('unit')
+                                }
+                                financial_statements.append(bs_statement)
+                        
+                        # ดึงข้อมูลจาก Cash Flow (cf)
+                        if 'report' in report and 'cf' in report['report']:
+                            for item in report['report']['cf']:
+                                cf_statement = {
+                                    'symbol': report.get('symbol'),
+                                    'year': report.get('year'),
+                                    'quarter': report.get('quarter'),
+                                    'statement_type': 'cash_flow',
+                                    'concept': item.get('concept'),
+                                    'label': item.get('label'),
+                                    'value': item.get('value'),
+                                    'unit': item.get('unit')
+                                }
+                                financial_statements.append(cf_statement)
                         
                         # ส่งข้อมูลไปยัง Kafka
-                        producer.send('financial_data', value=key_financial_data)
+                        producer.send('financial_data', value=financial_statements)
                         
-                        print(f"✓ Sent financial data for {symbol} - Year: {key_financial_data['company_info']['year']}")
-                        
-                        # Format numbers with commas, handle N/A cases
-                        net_sales = key_financial_data['income_statement'].get('net_sales', 'N/A')
-                        net_income = key_financial_data['income_statement'].get('net_income', 'N/A')
-                        total_assets = key_financial_data['balance_sheet'].get('total_assets', 'N/A')
-                        
-                        print(f"  Net Sales: ${net_sales:,.0f}" if net_sales != 'N/A' else "  Net Sales: N/A")
-                        print(f"  Net Income: ${net_income:,.0f}" if net_income != 'N/A' else "  Net Income: N/A")
-                        print(f"  Total Assets: ${total_assets:,.0f}" if total_assets != 'N/A' else "  Total Assets: N/A")
+                        print(f"✓ Sent {len(financial_statements)} financial statements for {symbol} - Year: {report.get('year')}")
                 else:
                     print(f"✗ No 2025 financial data found for {symbol}")
             else:
