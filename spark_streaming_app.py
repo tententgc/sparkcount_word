@@ -6,7 +6,7 @@ from pyspark.sql.types import StructType, StringType, FloatType, LongType, Array
 spark = SparkSession.builder \
     .appName("StockPriceStreamingAggregator") \
     .master("local[*]") \
-    .getOrCreate()
+    .getOrCreate() 
 
 spark.sparkContext.setLogLevel("WARN")
 
@@ -43,10 +43,9 @@ df_flat = df_parsed.select(explode("stocks").alias("stock")) \
         col("stock.timestamp").cast("timestamp").alias("event_time")
     )
 
-# Aggregation: count, sum, mean, min, max by symbol per 1-minute window
 agg_df = df_flat.groupBy(
-    window(col("event_time"), "5 minutes", "1 minute"),  # <--- sliding window
-    col("symbol")
+    window(col("event_time"), "5 minutes", "1 minute"),col("symbol") 
+    # window(col("event_time"), "3 minutes"),col("symbol")
 ).agg(
     count("price").alias("count"),
     sum("price").alias("sum"),
@@ -56,12 +55,12 @@ agg_df = df_flat.groupBy(
 ).select(
     col("window.start").alias("start"),
     col("window.end").alias("end"),
-    "symbol", "count", "sum", "mean", "min", "max"
-)
+    "symbol", "count", "mean", "min", "max"
+).orderBy("symbol","start")
 
-# Output to console
+
 query = agg_df.writeStream \
-    .outputMode("update") \
+    .outputMode("complete") \
     .format("console") \
     .option("truncate", False) \
     .start()
