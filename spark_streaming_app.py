@@ -18,7 +18,7 @@ stock_schema = StructType() \
     .add("low", FloatType()) \
     .add("timestamp", LongType())
 
-# Kafka message = list of stock records → use ArrayType
+# Kafka message = list of stock records → use ArrayTyps
 message_schema = ArrayType(stock_schema)
 
 # Read from Kafka
@@ -44,7 +44,7 @@ df_flat = df_parsed.select(explode("stocks").alias("stock")) \
     )
 
 agg_df = df_flat.groupBy(
-    window(col("event_time"), "5 minutes", "1 minute"),col("symbol") 
+    window(col("event_time"), "5 minutes", "1 minute"),col("symbol")
     # window(col("event_time"), "3 minutes"),col("symbol")
 ).agg(
     count("price").alias("count"),
